@@ -23,17 +23,24 @@ const UserSchema = mongoose.Schema(
       type: String,
       enum: ["active", "suspended"],
       required: true,
-      default: "suspended",
+      default: "active",
     },
-    avatar: { type: String },
+    avatar: { type: String, default: "thisisaurlorsomething" },
     isVerified: { type: Boolean, default: false },
     lastOnline: { type: Date, default: Date.now },
     actionToken: { type: String, default: undefined },
     tokenExpiresAt: { type: Date, default: undefined },
     suspension: { reason: String, suspendedAt: Date },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: String, enum: ["user", "admin"], default: null },
   },
   { timestamps: true }
 );
+
+UserSchema.index({ fullname: 1 });
+UserSchema.index({ accountType: 1 });
+UserSchema.index({ status: 1 });
 
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();

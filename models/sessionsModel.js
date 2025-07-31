@@ -6,7 +6,7 @@ const SessionSchema = mongoose.Schema(
     refreshToken: String,
     expiresAt: Date,
     deviceId: String,
-    device: String,
+    deviceInfo: String,
     ip: String,
   },
   { timestamps: true }

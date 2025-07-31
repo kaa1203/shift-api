@@ -3,7 +3,6 @@ import { sendEmail } from "./nodemailer.js";
 
 const emailTemplate = ({ to, type, token, reason }) => {
   const name = to.split("@")[0];
-
   const messages = {
     verifyAccount: {
       subject: "Verify your account",
@@ -109,9 +108,7 @@ const emailTemplate = ({ to, type, token, reason }) => {
 					<div class="container">
 						<p>Hello ${name},</p>
 
-						${mailRef.message}
-
-						<p>This is a development email from a local environment. No action is required.</p>
+						${mailRef.message} 
 						
 						<p>Best regards,</p>
 
