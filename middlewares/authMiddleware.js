@@ -6,6 +6,7 @@ import { CustomError } from "./errorMiddleware.js";
 import { User } from "../models/usersModel.js";
 import { Session } from "../models/sessionsModel.js";
 import { generateCookies } from "../utils/tokenGenerator.js";
+import { checkParam } from "../utils/check.js";
 
 const { TOKEN_SECRET } = process.env;
 
@@ -47,17 +48,20 @@ const authenticate = asyncHandler(async (req, res, next) => {
   // Check session and set up cookie
   try {
     const session = await Session.findOne({ refreshToken });
+    // console.log("has reftoken");
+    if (!session) return next(new CustomError("Invalid session", 401));
 
-    if (!session || session.expiresAt < new Date())
+    if (session.expiresAt < new Date())
       return next(new CustomError("Session expired! please login again.", 401));
 
     const user = await User.findById(session.userId);
 
-    if (!user) return next(new CustomError("User not found!", 404));
+    checkParam(user);
 
     generateCookies(res, user, { includeRefresh: false });
 
     req.user = user;
+
     return next();
   } catch (e) {
     console.error("Auth error:", e.message);

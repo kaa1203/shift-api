@@ -6,21 +6,28 @@ import {
   getEntryById,
   getEntryStats,
   getMoodStats,
+  restoreEntry,
   softDeleteEntry,
   updateEntry,
 } from "../../controllers/entriesControllers.js";
+import authenticate from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 router.get("/moodStats", getMoodStats);
 router.get("/entryStats", getEntryStats);
 
-router.get("/", getEntries).get("/:id", getEntryById);
+router
+  .get("/", authenticate, getEntries)
+  .get("/:entryId", authenticate, getEntryById);
 
-router.post("/", addEntry);
+router.post("/add", authenticate, addEntry);
 
-router.patch("/:id", updateEntry).patch("/:id/softDelete", softDeleteEntry);
+router
+  .patch("/update/:entryId", authenticate, updateEntry)
+  .patch("/soft-delete/:entryId", authenticate, softDeleteEntry)
+  .patch("/restore/:entryId", authenticate, restoreEntry);
 
-router.delete("/:id", deleteEntry);
+router.delete("/:entryId", authenticate, deleteEntry);
 
 export { router };

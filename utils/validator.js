@@ -1,7 +1,9 @@
 import Joi from "joi";
 
-const validator = (schema) => (payload) =>
-  schema.validate(payload, { abortEarly: true });
+const validator =
+  (schema) =>
+  (payload, opts = {}) =>
+    schema.validate(payload, { abortEarly: true, context: opts });
 
 const registerSchema = Joi.object({
   fullname: Joi.string().trim().required().max(60).messages({
@@ -146,9 +148,37 @@ const updateProfileSchema = Joi.object({
 
 const avatarSchema = Joi.object({ avatarUrl: Joi.string().trim().required() });
 
+const entrySchema = Joi.object({
+  entry: Joi.string().trim().max(5000).required().when("$isUpdate", {
+    is: true,
+    then: Joi.optional(),
+    otherwise: Joi.required(),
+  }),
+  mood: Joi.object({
+    label: Joi.string()
+      .valid("very sad", "sad", "fine", "happy", "very happy")
+      .trim()
+      .when("$isUpdate", {
+        is: true,
+        then: Joi.optional(),
+        otherwise: Joi.required(),
+      }),
+    intensity: Joi.number()
+      .min(1)
+      .max(5)
+      .when("$isUpdate", {
+        is: true,
+        then: Joi.optional(),
+        otherwise: Joi.required(),
+      }),
+  }),
+  tags: Joi.array().items(Joi.string()),
+});
+
 export const registerValidation = validator(registerSchema);
 export const loginValidation = validator(loginSchema);
 export const emailValidation = validator(emailSchema);
 export const newPasswordValidation = validator(newPasswordSchema);
 export const avatarValidation = validator(avatarSchema);
 export const updateProfileValidation = validator(updateProfileSchema);
+export const entryValidation = validator(entrySchema);

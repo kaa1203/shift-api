@@ -1,6 +1,5 @@
 import asyncHandler from "express-async-handler";
 import { UAParser } from "ua-parser-js";
-import mongoose from "mongoose";
 
 import {
   emailValidation,
@@ -19,6 +18,7 @@ import { generateCookies, generateVToken } from "../utils/tokenGenerator.js";
 
 import { Session } from "../models/sessionsModel.js";
 import parseQueryParams from "../utils/parseQueryParams.js";
+import { hasError, isIdValid, checkParam } from "../utils/check.js";
 
 const handleCreateUser = (action) =>
   asyncHandler(async (req, res, next) => {
@@ -28,7 +28,7 @@ const handleCreateUser = (action) =>
     const isAdmin = action === "create user";
     const isSuper = req.user?.accountType === "super admin";
 
-    if (error) return next(new CustomError(error.message, 400));
+    hasError(error);
 
     const existingUser = await User.findOne({
       $or: [{ email }, { username }],
@@ -80,7 +80,7 @@ const handleCreateUser = (action) =>
 const updateUser = asyncHandler(async (req, res, next) => {
   const { value, error } = updateProfileValidation(req.body);
 
-  if (error) return next(new CustomError(error.message, 400));
+  hasError(error);
 
   const targetUserId = req.params.userId || req.user._id;
   const isAdmin = req.user.accountType !== "user";
@@ -99,7 +99,7 @@ const updateUser = asyncHandler(async (req, res, next) => {
 
   const user = await User.findById(targetUserId);
 
-  if (!user) return next(new CustomError("User not found!", 404));
+  checkParam(user, "user");
 
   for (const [key, val] of Object.entries(value)) {
     if (key === "username" && val !== user.username) {
@@ -124,14 +124,14 @@ const updateUser = asyncHandler(async (req, res, next) => {
   res.status(200).json(user);
 });
 
-const changePasswordRequest = asyncHandler(async (req, res, next) => {
+const changePasswordRequest = asyncHandler(async (req, res) => {
   const { value, error } = emailValidation(req.body);
 
-  if (error) return next(new CustomError(error.message, 400));
+  hasError(error);
 
   const user = await User.findOne({ email: value.email });
 
-  if (!user) return next(new CustomError("User not found!", 404));
+  checkParam(user, "user");
 
   const { token, expiresAt } = generateVToken();
 
@@ -158,7 +158,7 @@ const changePassword = asyncHandler(async (req, res, next) => {
 
   const { value, error } = newPasswordValidation(req.body);
 
-  if (error) return next(new CustomError(error.message, 400));
+  hasError(error);
 
   let user;
 
@@ -174,7 +174,7 @@ const changePassword = asyncHandler(async (req, res, next) => {
 
     user = await User.findById(_id);
 
-    if (!user) return next(new CustomError("User not found!", 404));
+    checkParam(user, "user");
   }
 
   user.password = value.password;
@@ -213,11 +213,11 @@ const verifyAccount = asyncHandler(async (req, res, next) => {
 const verifyAccountRequest = asyncHandler(async (req, res, next) => {
   const { value, error } = emailValidation(req.body);
 
-  if (error) return next(new CustomError(error.message, 400));
+  hasError(error);
 
   const user = await User.findOne({ email: value.email });
 
-  if (!user) return next(new CustomError("User not found!", 404));
+  checkParam(user, "user");
 
   const { token, expiresAt } = generateVToken();
 
@@ -327,7 +327,7 @@ const softDeleteUser = asyncHandler(async (req, res, next) => {
 
   const user = await User.findById(_id);
 
-  if (!user) return next(new CustomError("User not found!", 404));
+  checkParam(user, "user");
 
   user.isDeleted = true;
   user.deletedAt = Date.now();
@@ -350,19 +350,19 @@ const softDeleteUser = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "User temporarily deleted!" });
 });
 
-const deleteUser = asyncHandler(async (req, res, next) => {
+const deleteUser = asyncHandler(async (req, res) => {
   const userId = req.params.userId;
 
   const user = await User.findById(userId);
 
-  if (!user) return next(new CustomError("User not found!", 404));
+  checkParam(user, "user");
 
   await User.deleteOne({ _id: userId });
 
   res.status(200).json({ message: "User deleted!" });
 });
 
-const getUsers = asyncHandler(async (req, res, next) => {
+const getUsers = asyncHandler(async (req, res) => {
   const { limit, q, skip } = parseQueryParams(req.query);
 
   let query = {};
@@ -377,28 +377,31 @@ const getUsers = asyncHandler(async (req, res, next) => {
     ];
   }
 
-  const users = await User.find(query).skip(skip).limit(limit).lean();
+  const users = await User.find(query)
+    .skip(skip)
+    .limit(limit)
+    .lean()
+    .select("-password -__v");
 
   res.status(200).json(users);
 });
 
-const getUserById = asyncHandler(async (req, res, next) => {
+const getUserById = asyncHandler(async (req, res) => {
   const _id = req.params.userId;
 
-  if (!mongoose.Types.ObjectId.isValid(_id))
-    return next(new CustomError("Invalid ObjectId Format!", 400));
+  isIdValid(_id);
 
   const user = await User.findById(_id);
 
-  if (!user) return next(new CustomError("User not found!", 404));
+  checkParam(user, "user");
 
   res.json(user);
 });
 
-const getProfile = asyncHandler(async (req, res, next) => {
+const getProfile = asyncHandler(async (req, res) => {
   const user = req.user;
 
-  if (!user) return next(new CustomError("User not found!", 404));
+  checkParam(user, "user");
 
   const profile = {
     fullname: user.fullname,
