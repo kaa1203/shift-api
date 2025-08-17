@@ -3,6 +3,8 @@ import parseQueryParams from "../utils/parseQueryParams.js";
 import { entryValidation } from "../utils/validator.js";
 import { hasError, isIdValid, checkParam } from "../utils/check.js";
 import { Entry } from "../models/entriesModel.js";
+import { CustomError } from "../middlewares/errorMiddleware.js";
+import getDateFormat from "../utils/getDate.js";
 
 const getEntries = asyncHandler(async (req, res) => {
   const { limit, q, skip, filters } = parseQueryParams(req.query);
@@ -40,9 +42,71 @@ const getEntryById = asyncHandler(async (req, res) => {
   res.status(200).json({ entry });
 });
 
-const getEntryStats = asyncHandler(async (req, res) => {});
+const getMoodStats = asyncHandler(async (_, res) => {
+  const {
+    todayStart,
+    todayEnd,
+    weekStart,
+    weekEnd,
+    monthStart,
+    monthEnd,
+    yearStart,
+    yearEnd,
+  } = getDateFormat();
 
-const getMoodStats = asyncHandler(async (req, res) => {});
+  const generatePipeline = (startDate, endDate) => [
+    { $match: { postedAt: { $gte: startDate, $lte: endDate } } },
+    {
+      $group: {
+        _id: "$mood.label",
+        totalIntensity: { $sum: "$mood.intensity" },
+        totalEntry: { $sum: 1 },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        perLabel: {
+          $push: {
+            label: "$_id",
+            totalIntensity: "$totalIntensity",
+            totalEntry: "$totalEntry",
+          },
+        },
+        totalIntensity: { $sum: "$totalIntensity" },
+        totalEntry: { $sum: "$totalEntry" },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        perLabel: 1,
+        totalEntry: 1,
+        moodPercentage: {
+          $multiply: [
+            {
+              $divide: ["$totalIntensity", { $multiply: ["$totalEntry", 5] }],
+            },
+            100,
+          ],
+        },
+      },
+    },
+  ];
+
+  const result = await Entry.aggregate([
+    {
+      $facet: {
+        daily: generatePipeline(todayStart, todayEnd),
+        weekly: generatePipeline(weekStart, weekEnd),
+        monthly: generatePipeline(monthStart, monthEnd),
+        yearly: generatePipeline(yearStart, yearEnd),
+      },
+    },
+  ]);
+
+  res.status(200).json(result);
+});
 
 const addEntry = asyncHandler(async (req, res) => {
   const { value, error } = entryValidation(req.body, { isUpdate: false });
@@ -138,7 +202,6 @@ const deleteEntry = asyncHandler(async (req, res) => {
 export {
   getEntries,
   getEntryById,
-  getEntryStats,
   getMoodStats,
   addEntry,
   updateEntry,

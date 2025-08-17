@@ -4,7 +4,6 @@ import {
   deleteEntry,
   getEntries,
   getEntryById,
-  getEntryStats,
   getMoodStats,
   restoreEntry,
   softDeleteEntry,
@@ -14,8 +13,7 @@ import authenticate from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/moodStats", getMoodStats);
-router.get("/entryStats", getEntryStats);
+router.get("/mood-stats", authenticate, getMoodStats);
 
 router
   .get("/", authenticate, getEntries)
