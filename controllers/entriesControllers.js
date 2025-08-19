@@ -3,8 +3,8 @@ import parseQueryParams from "../utils/parseQueryParams.js";
 import { entryValidation } from "../utils/validator.js";
 import { hasError, isIdValid, checkParam } from "../utils/check.js";
 import { Entry } from "../models/entriesModel.js";
-import { CustomError } from "../middlewares/errorMiddleware.js";
 import getDateFormat from "../utils/getDate.js";
+import { decrypt, encrypt } from "../utils/encryptUtil.js";
 
 const getEntries = asyncHandler(async (req, res) => {
   const { limit, q, skip, filters } = parseQueryParams(req.query);
@@ -28,6 +28,10 @@ const getEntries = asyncHandler(async (req, res) => {
   }
 
   const entries = await Entry.find(query).limit(limit).skip(skip);
+
+  entries.map((en) => {
+    if (en.entry) en.entry = decrypt(en.entry);
+  });
 
   res.status(200).json(entries);
 });
@@ -116,6 +120,8 @@ const addEntry = asyncHandler(async (req, res) => {
   value.userId = req.user._id;
   value.postedAt = Date.now();
 
+  value.entry = encrypt(value.entry);
+
   await Entry.create(value);
 
   res.status(200).json({ message: "Entry created!" });
@@ -136,6 +142,7 @@ const updateEntry = asyncHandler(async (req, res) => {
 
   for (const [key, val] of Object.entries(value)) {
     if (val !== undefined) entry[key] = val;
+    if (key === "entry") entry[key] = encrypt(val);
   }
 
   await entry.save();
