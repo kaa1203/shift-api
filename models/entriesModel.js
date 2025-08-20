@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const entriesSchema = mongoose.Schema({
+const entriesSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   postedAt: { type: Date, default: Date.now },
   mood: {

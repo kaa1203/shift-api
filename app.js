@@ -6,6 +6,7 @@ import "dotenv/config";
 
 import { router as entriesRoute } from "./routes/api/entriesRoutes.js";
 import { router as usersRoute } from "./routes/api/usersRoutes.js";
+import { router as tagsRoute } from "./routes/api/tagsRoutes.js";
 
 import { errorHandler, notFound } from "./middlewares/errorMiddleware.js";
 
@@ -25,6 +26,7 @@ app.set("trust proxy", true);
 
 app.use("/api/entries", entriesRoute);
 app.use("/api/users", usersRoute);
+app.use("/api/tags", tagsRoute);
 
 app.use(notFound);
 app.use(errorHandler);
