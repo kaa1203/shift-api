@@ -5,12 +5,13 @@ import {
   getTags,
   updateTags,
 } from "../../controllers/tagsControllers.js";
+import authenticate from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getTags);
-router.post("/add", addTags);
-router.patch("/update/:tagId", updateTags);
-router.delete("/delete/:tagId", deleteTags);
+router.get("/", authenticate, getTags);
+router.post("/", authenticate, addTags);
+router.patch("/:tagId", authenticate, updateTags);
+router.delete("/:tagId", authenticate, deleteTags);
 
 export { router };

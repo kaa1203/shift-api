@@ -56,7 +56,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
     const user = await User.findById(session.userId);
 
-    checkParam(user);
+    checkParam(user, "user");
 
     generateCookies(res, user, { includeRefresh: false });
 

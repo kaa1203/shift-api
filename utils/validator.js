@@ -163,16 +163,19 @@ const entrySchema = Joi.object({
         then: Joi.optional(),
         otherwise: Joi.required(),
       }),
-    intensity: Joi.number()
-      .min(1)
-      .max(5)
-      .when("$isUpdate", {
-        is: true,
-        then: Joi.optional(),
-        otherwise: Joi.required(),
-      }),
+    intensity: Joi.number().min(1).max(5).when("$isUpdate", {
+      is: true,
+      then: Joi.optional(),
+      otherwise: Joi.required(),
+    }),
   }),
   tags: Joi.array().items(Joi.string()),
+});
+
+const tagSchema = Joi.object({
+  name: Joi.string().min(4).required().trim(),
+  color: Joi.string().required().trim(),
+  description: Joi.string().min(4).optional().trim(),
 });
 
 export const registerValidation = validator(registerSchema);
@@ -182,3 +185,4 @@ export const newPasswordValidation = validator(newPasswordSchema);
 export const avatarValidation = validator(avatarSchema);
 export const updateProfileValidation = validator(updateProfileSchema);
 export const entryValidation = validator(entrySchema);
+export const tagValidation = validator(tagSchema);

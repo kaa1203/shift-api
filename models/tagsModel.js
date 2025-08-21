@@ -2,14 +2,10 @@ import mongoose from "mongoose";
 
 const TagSchema = new mongoose.Schema(
   {
-    userId: { types: mongoose.Schema.Types.ObjectId, ref: "User" },
-    tags: [
-      {
-        name: { type: String, required: true },
-        color: { type: String },
-        description: { type: String },
-      },
-    ],
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    name: { type: String, required: true },
+    color: { type: String },
+    description: { type: String },
   },
   { timestamps: true }
 );

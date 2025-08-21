@@ -9,23 +9,38 @@ import { decrypt, encrypt } from "../utils/encryptUtil.js";
 const getEntries = asyncHandler(async (req, res) => {
   const { limit, q, skip, filters } = parseQueryParams(req.query);
 
-  let query = {};
+  let query = { userId: req.user._id };
 
   if (q) {
     query.$or = [{ tags: { $regex: q, $options: "i" } }];
   }
 
   if (filters) {
-    const { startDate, endDate } = filters;
+    const { startDate, endDate, label, tags } = filters;
 
     if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
-      if (endDate) query.createdAt.$lte = new Date(endDate);
+      query.postedAt = {};
+      if (startDate) query.postedAt.$gte = new Date(startDate);
+      if (endDate) query.postedAt.$lte = new Date(endDate);
+
+      delete filters.startDate;
+      delete filters.endDate;
     }
 
-    query = { ...filters };
+    if (label) {
+      query["mood.label"] = label;
+      delete filters.label;
+    }
+
+    if (tags) {
+      query.tags = tags;
+      delete filters.tags;
+    }
+
+    query = { ...query, ...filters };
   }
+
+  console.log(query);
 
   const entries = await Entry.find(query).limit(limit).skip(skip);
 
@@ -138,7 +153,7 @@ const updateEntry = asyncHandler(async (req, res) => {
 
   const [entry] = await Entry.find({ userId: req.user._id, _id: entryId });
 
-  checkParam(entry);
+  checkParam(entry, "entry");
 
   for (const [key, val] of Object.entries(value)) {
     if (val !== undefined) entry[key] = val;
